@@ -3,6 +3,7 @@ import datetime
 from forms import AddTaskForm, RegisterForm, LoginForm
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 
 from flask import Flask, flash, redirect, render_template, \
     request, session, url_for, g
@@ -19,7 +20,7 @@ from models import Task, User
 #def connect_db():
 #    return sqlite3.connect(app.config['DATABASE_PATH'])
     
-def login_required(test):
+def hf_login_required(test):
     @wraps(test)
     def wrap(*args, **kwargs):
         if 'logged_in' in session:
@@ -29,9 +30,22 @@ def login_required(test):
             return redirect(url_for('login'))
     return wrap
     
+def hf_flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u'Error in the %s field - %s' % (
+                getattr(form, field).label.text, error), 'error')
+                
+def hf_open_tasks():
+    return db.session.query(Task).filter_by(status='1').order_by(Task.due_date.asc())
+    
+def hf_closed_tasks():
+    return db.session.query(Task).filter_by(status='0').order_by(Task.due_date.asc())
+    
 # route handlers
 
 @app.route('/logout/')
+@hf_login_required
 def logout():
     session.pop('logged_in', None)
     session.pop('user_id', None)
@@ -60,7 +74,7 @@ def login():
     return render_template('login.html',form=form,error=error)
     
 @app.route('/tasks/')
-@login_required
+@hf_login_required
 def tasks():
     #g.db = connect_db()
     #cursor = g.db.execute('SELECT name, due_date, priority, task_id FROM tasks WHERE status=1')
@@ -77,11 +91,11 @@ def tasks():
     return render_template(
         'tasks.html',
         form = AddTaskForm(request.form),
-        open_tasks=open_tasks,
-        closed_tasks=closed_tasks)
+        open_tasks=hf_open_tasks(),
+        closed_tasks=hf_closed_tasks())
     
 @app.route('/add/', methods=['GET','POST'])
-@login_required
+@hf_login_required
 def new_task():
     #g.db = connect_db()
     #name = request.form['name']
@@ -100,6 +114,7 @@ def new_task():
     #    g.db.close()
     #    flash('New entry has been created.')
     #    return redirect(url_for('tasks'))
+    error = None
     form = AddTaskForm(request.form)
     if request.method == 'POST':
         if form.validate():
@@ -115,12 +130,15 @@ def new_task():
             flash('New entry was successfully added.')
             return redirect(url_for('tasks'))
         else:
-            flash('All fields are required.')
-            return redirect(url_for('tasks'))
-    return render_template('tasks.html',form=form)
+            return render_template('tasks.html',form=form,
+                                                error=error,
+                                                open_tasks=hf_open_tasks(),
+                                                closed_tasks=hf_closed_tasks()
+                                    )
+    return render_template('tasks.html',form=form,error=error)
         
 @app.route('/complete/<int:task_id>/')
-@login_required
+@hf_login_required
 def complete(task_id):
     #g.db = connect_db()
     #g.db.execute('UPDATE tasks SET status=0 WHERE task_id='+str(task_id))
@@ -133,7 +151,7 @@ def complete(task_id):
     return redirect(url_for('tasks'))
     
 @app.route('/delete/<int:task_id>/')
-@login_required
+@hf_login_required
 def delete_entry(task_id):
     #g.db = connect_db()
     #g.db.execute('DELETE FROM tasks WHERE task_id='+str(task_id))
@@ -154,10 +172,14 @@ def register():
             new_user = User(form.name.data,
                             form.email.data,
                             form.password.data,)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Thanks for registering. Please login.')
-            return redirect(url_for('login'))
+            try:
+                db.session.add(new_user)
+                db.session.commit()
+                flash('Thanks for registering. Please login.')
+                return redirect(url_for('login'))
+            except IntegrityError:
+                error = 'That username and/or email already exists.'
+                return render_template('register.html',form=form,error=error)
     return render_template('register.html',form=form,error=error)
             
     
