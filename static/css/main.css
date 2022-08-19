@@ -1,3 +1,4 @@
+/*
 body {
   font-family: sans-serif;
   background: #eee;
@@ -135,6 +136,17 @@ label {
   position:relative;
 }
 
+.btn {
+  background-color:#000;
+  display:inline-block;
+  color:#ffffff;
+  font-size:13px;
+  padding:3px 12px;
+  margin: 0;
+  text-decoration:none;
+  position:relative;	
+}
+
 .inline-form .input-group {
   display: inline-block;
   marign: 10px 5px;
@@ -147,4 +159,27 @@ label {
 .error {
   color: red;
   font-size: .8em;
+}
+
+.form-group {
+	padding-bottom: 5px;
+}
+*/
+
+body {
+	padding: 60px 0;
+	background: #ffffff;
+}
+
+.footer {
+	padding-top: 30px;
+}
+
+.error {
+	color: red;
+	font-size: 0.8em;
+}
+
+.input-group {
+	margin: 15px 0;
 }
