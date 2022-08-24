@@ -8,7 +8,7 @@
 <form class="form-signin" role="form" method="post" action="/">
   {{ form.csrf_token }}
   <div class="input-group">
-    {{ form.name(placeholder="user name") }}
+    {{ form.name(placeholder="username") }}
     {% if form.name.errors %}
       <span class="error">
         {% for error in form.name.errors %}
@@ -30,7 +30,7 @@
   <button class="btn btn-sm btn-success" type="submit">Sign in</button>
   <br>
   <br>
-  <p><em>Need an account?</em><a href="/register">Signup!!</a></p>
+  <p><em>Need an account?</em><a href="/register"> Signup!!</a></p>
 </form>
 
 {% endblock %}
